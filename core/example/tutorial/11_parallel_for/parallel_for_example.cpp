@@ -14,8 +14,6 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Random.hpp>
 
-#include <iostream>
-
 //---------------------------------------------------------------------------//
 // parallel for example.
 //---------------------------------------------------------------------------//
@@ -159,7 +157,7 @@ void parallelForExample()
       Because we are using 1D indexing in this case, we can directly use
       existing Kokkos execution policies and the parallel for.
      */
-    Kokkos::RangePolicy<ExecutionSpace> linear_policy( 2, num_tuple - 2 );
+    Kokkos::RangePolicy<ExecutionSpace> linear_policy( 0, num_tuple );
     Kokkos::parallel_for( linear_policy, rand_kernel, "rand_op" );
     Kokkos::fence();
 

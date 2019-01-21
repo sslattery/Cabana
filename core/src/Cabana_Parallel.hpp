@@ -106,7 +106,7 @@ inline void simd_parallel_for(
     using team_policy =
         typename SimdPolicy<VectorLength,ExecParameters...>::base_type;
 
-   Kokkos::parallel_for(
+    Kokkos::parallel_for(
         str,
         dynamic_cast<const team_policy&>(exec_policy),
         KOKKOS_LAMBDA( const typename team_policy::member_type& team )
@@ -277,10 +277,10 @@ inline void neighbor_parallel_for(
                 Kokkos::TeamThreadRange(
                     team,NeighborList<NeighborListType>::numNeighbor(list,i)),
                 [&]( const int n ) {
-                Impl::functorTagDispatch<work_tag>(
-                    functor,
-                    i,
-                    NeighborList<NeighborListType>::getNeighbor(list,i,n) );
+                    Impl::functorTagDispatch<work_tag>(
+                        functor,
+                        i,
+                        NeighborList<NeighborListType>::getNeighbor(list,i,n) );
                 });
         },
         str );

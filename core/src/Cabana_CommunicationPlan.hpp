@@ -176,14 +176,16 @@ auto countSendsAndCreateSteering(
                     result += neighbor_counts_dup( thread_id, i );
                 },
                 thread_counts );
-            neighbor_counts(i) = thread_counts;
+            Kokkos::single( Kokkos::PerTeam(team), [=]() {
+                    neighbor_counts(i) = thread_counts;
+                });
         });
     Kokkos::fence();
 
     // Compute the location of each export element in the send buffer of
     // its destination rank.
     Kokkos::parallel_for(
-        "Cabana::CommunicationPlan::createSteering",
+        "Cabana::CommunicationPlan::createSteeringOffsets",
         team_policy(element_export_ranks.extent(0),Kokkos::AUTO),
         KOKKOS_LAMBDA( const typename team_policy::member_type& team ){
             // Get the element id.
@@ -222,8 +224,10 @@ auto countSendsAndCreateSteering(
                 // Add the thread-local value to the offset where we subtract
                 // the 1 that we added artificially when we were first
                 // counting.
-                neighbor_ids(i) = thread_offset +
-                                  neighbor_ids_dup(dup_thread,i) - 1;
+                Kokkos::single( Kokkos::PerTeam(team), [=]() {
+                        neighbor_ids(i) = thread_offset +
+                                          neighbor_ids_dup(dup_thread,i) - 1;
+                    });
             }
         });
     Kokkos::fence();
@@ -385,6 +389,14 @@ class CommunicationPlan
     */
     Kokkos::View<std::size_t*,device_type> getExportSteering() const
     { return _export_steering; }
+
+    /*!
+      \brief Get the inverse of the steering vector for the exports.
+
+      \return The inverse steering vector for the exports.
+    */
+    Kokkos::View<int*,device_type> getExportSteeringInverse() const
+    { return _export_steering_inverse; }
 
     // The functions in the public block below would normally be protected but
     // we make them public to allow using private class data in CUDA kernels
@@ -784,15 +796,28 @@ class CommunicationPlan
             Kokkos::ViewAllocateWithoutInitializing("export_steering"),
             _total_num_export );
         auto steer_vec = _export_steering;
+        _export_steering_inverse = Kokkos::View<int*,memory_space>(
+            Kokkos::ViewAllocateWithoutInitializing("export_steering_inverse"),
+            _num_export_element );
+        auto steer_vec_inv = _export_steering_inverse;
         Kokkos::View<std::size_t*,memory_space> counts( "counts", num_n );
         Kokkos::parallel_for(
             "Cabana::createSteering",
             Kokkos::RangePolicy<execution_space>(0,_num_export_element),
             KOKKOS_LAMBDA( const int i ){
+                auto idx = (use_iota) ? i : element_export_ids(i);
                 if ( element_export_ranks(i) >= 0 )
+                {
                     steer_vec( rank_offsets( element_export_ranks(i) ) +
-                               neighbor_ids(i) )  =
-                        (use_iota) ? i : element_export_ids(i);
+                               neighbor_ids(i) ) = idx;
+                    steer_vec_inv( idx ) =
+                        rank_offsets( element_export_ranks(i) ) +
+                        neighbor_ids(i);
+                }
+                else
+                {
+                    steer_vec_inv( idx ) = -1;
+                }
             });
         Kokkos::fence();
     }
@@ -807,6 +832,7 @@ class CommunicationPlan
     std::vector<std::size_t> _num_import;
     std::size_t _num_export_element;
     Kokkos::View<std::size_t*,device_type> _export_steering;
+    Kokkos::View<int*,device_type> _export_steering_inverse;
 };
 
 //---------------------------------------------------------------------------//

@@ -250,7 +250,7 @@ void gather( const Halo_t& halo,
 {
     // Check that the AoSoA is the right size.
     if ( aosoa.size() != halo.numLocal() + halo.numGhost() )
-        throw std::runtime_error("AoSoA is the wrong size for scatter!");
+        throw std::runtime_error("AoSoA is the wrong size for gather!");
 
     // Allocate a send buffer.
     Kokkos::View<typename AoSoA_t::tuple_type*,
@@ -387,7 +387,7 @@ void gather( const Halo_t& halo,
 {
     // Check that the Slice is the right size.
     if ( slice.size() != halo.numLocal() + halo.numGhost() )
-        throw std::runtime_error("Slice is the wrong size for scatter!");
+        throw std::runtime_error("Slice is the wrong size for gather!");
 
     // Get the number of components in the slice.
     std::size_t num_comp = 1;

@@ -569,20 +569,20 @@ int main( int argc, char* argv[] )
 
     // Transfer GPU data to CPU, communication on CPU, and transfer back to
     // GPU.
-    performanceTest<CudaDevice,OpenMPDevice>(
-        file, num_particle, "cuda_host_" );
+    // performanceTest<CudaDevice,OpenMPDevice>(
+    //     file, num_particle, "cuda_host_" );
 
-    // Do everything on the CPU.
-    performanceTest<OpenMPDevice,OpenMPDevice>(
-        file, num_particle, "host_host_" );
+    // // Do everything on the CPU.
+    // performanceTest<OpenMPDevice,OpenMPDevice>(
+    //     file, num_particle, "host_host_" );
 
     // Do everything on the GPU with regular GPU memory.
     performanceTest<CudaDevice,CudaDevice>(
         file, num_particle, "cuda_cuda_" );
 
-    // Do everything on the GPU with UVM GPU memory.
-    performanceTest<CudaUVMDevice,CudaUVMDevice>(
-        file, num_particle, "cudauvm_cudauvm_" );
+    // // Do everything on the GPU with UVM GPU memory.
+    // performanceTest<CudaUVMDevice,CudaUVMDevice>(
+    //     file, num_particle, "cudauvm_cudauvm_" );
 
     // Close the output file on rank 0.
     if ( 0 == comm_rank )

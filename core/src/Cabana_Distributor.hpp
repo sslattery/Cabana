@@ -211,28 +211,65 @@ void distributeData(
             Kokkos::ViewAllocateWithoutInitializing("distributor_recv_buffer"),
             distributor.totalNumImport() );
 
-    // Get the steering vector for the sends.
-    auto steering = distributor.getExportSteering();
-
     // Gather the exports from the source AoSoA into the tuple-contiguous send
     // buffer or the receive buffer if the data is staying. We know that the
     // steering vector is ordered such that the data staying on this rank
     // comes first.
-    auto build_send_buffer_func =
-        KOKKOS_LAMBDA( const std::size_t i )
-        {
-            auto tpl = src.getTuple( steering(i) );
-            if ( i < num_stay )
-                recv_buffer( i ) = tpl;
-            else
-                send_buffer( i - num_stay ) = tpl;
-        };
-    Kokkos::RangePolicy<typename Distributor_t::execution_space>
-        build_send_buffer_policy( 0, distributor.totalNumExport() );
-    Kokkos::parallel_for( "Cabana::Impl::distributeData::build_send_buffer",
-                          build_send_buffer_policy,
-                          build_send_buffer_func );
-    Kokkos::fence();
+    auto steering_inv = distributor.getExportSteeringInverse();
+    using team_policy =
+        Kokkos::TeamPolicy<typename Distributor_t::execution_space,
+                           Kokkos::Schedule<Kokkos::Dynamic> >;
+    using index_type = typename team_policy::index_type;
+    using member_type = typename team_policy::member_type;
+    typedef typename Distributor_t::execution_space::scratch_memory_space
+        ScratchSpace;
+    typedef Kokkos::View<typename AoSoA_t::tuple_type*,
+                         ScratchSpace,
+                         Kokkos::MemoryUnmanaged> shared_tuple;
+    std::size_t shared_size = shared_tuple::shmem_size(AoSoA_t::vector_length);
+    Kokkos::parallel_for(
+        "Cabana::Impl::distributeData::build_send_buffer",
+        team_policy(src.numSoA(),1,AoSoA_t::vector_length).set_scratch_size(
+            0,Kokkos::PerTeam(shared_size)),
+        KOKKOS_LAMBDA( const member_type& team ){
+            shared_tuple tuples( team.team_scratch(0), team.team_size() );
+            index_type s = team.league_rank();
+            Kokkos::parallel_for(
+                Kokkos::ThreadVectorRange(team,
+                                          index_type(0),
+                                          index_type(src.arraySize(s))),
+                [&]( const index_type a ){
+                    // Do a coalesced load of the SoA into scratch memory.
+                    tupleCopy( tuples(a), 0, src.access(s), a );
+
+                    // Gather the tuples into the send/receive buffer.
+                    auto i = steering_inv( AoSoA_t::index_type::i(s,a) );
+                    if ( i >= 0 )
+                    {
+                        if ( i < num_stay )
+                            recv_buffer( i ) = tuples(a);
+                        else
+                            send_buffer( i - num_stay ) = tuples(a);
+                    }
+                });
+        });
+
+    // auto steering = distributor.getExportSteering();
+    // auto build_send_buffer_func =
+    //     KOKKOS_LAMBDA( const std::size_t i )
+    //     {
+    //         auto tpl = src.getTuple( steering(i) );
+    //         if ( i < num_stay )
+    //             recv_buffer( i ) = tpl;
+    //         else
+    //             send_buffer( i - num_stay ) = tpl;
+    //     };
+    // Kokkos::RangePolicy<typename Distributor_t::execution_space>
+    //     build_send_buffer_policy( 0, distributor.totalNumExport() );
+    // Kokkos::parallel_for( "Cabana::Impl::distributeData::build_send_buffer",
+    //                       build_send_buffer_policy,
+    //                       build_send_buffer_func );
+    // Kokkos::fence();
 
     // Post non-blocking receives.
     std::vector<MPI_Request> requests;

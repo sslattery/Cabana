@@ -26,6 +26,18 @@
 namespace Cajita
 {
 //---------------------------------------------------------------------------//
+// PARTICLE DATA ACCESS TRAITS
+//---------------------------------------------------------------------------//
+template<class ParticleVector>
+struct ParticleAccessTraits;
+
+template<class Scalar>
+struct ParticleAccessTraits<Scalar[3]>
+{
+    KOKKOS_INLINE_FUNCTION
+};
+
+//---------------------------------------------------------------------------//
 // LOCAL INTERPOLATION
 //---------------------------------------------------------------------------//
 
@@ -46,7 +58,7 @@ template <class ViewType, class SplineDataType, class PointDataType>
 KOKKOS_INLINE_FUNCTION void
 value( const ViewType &view, const SplineDataType &sd, PointDataType &result,
        typename std::enable_if<( std::rank<PointDataType>::value == 0 ),
-                               void *>::type = 0 )
+       void *>::type = 0 )
 {
     static_assert( SplineDataType::has_weight_values,
                    "G2P::value requires spline weight values" );

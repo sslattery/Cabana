@@ -28,13 +28,20 @@ namespace Cajita
 //---------------------------------------------------------------------------//
 // PARTICLE DATA ACCESS TRAITS
 //---------------------------------------------------------------------------//
-template<class ParticleVector>
-struct ParticleAccessTraits;
+template<class T>
+struct InterpolationAccessTraits;
 
-template<class Scalar>
-struct ParticleAccessTraits<Scalar[3]>
+template<class Scalar, int N>
+struct InterpolationAccessTraits<Scalar[N]>
 {
+    static constexpr int extent_0 = N;
+    static constexpr int extent_1 = 1;
+
     KOKKOS_INLINE_FUNCTION
+    Scalar& get( Scalar a[3], const int d )
+    {
+        return a[d];
+    }
 };
 
 //---------------------------------------------------------------------------//

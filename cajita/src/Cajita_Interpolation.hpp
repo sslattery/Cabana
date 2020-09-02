@@ -34,13 +34,50 @@ struct InterpolationAccessTraits;
 template<class Scalar, int N>
 struct InterpolationAccessTraits<Scalar[N]>
 {
-    static constexpr int extent_0 = N;
-    static constexpr int extent_1 = 1;
+    static constexpr int extent = N;
 
-    KOKKOS_INLINE_FUNCTION
-    Scalar& get( Scalar a[3], const int d )
+    KOKKOS_FORCEINLINE_FUNCTION
+    Scalar& get( Scalar a[N], const int d )
     {
         return a[d];
+    }
+};
+
+template<class Scalar, int N>
+struct InterpolationAccessTraits<const Scalar[N]>
+{
+    static constexpr int extent = N;
+
+    KOKKOS_FORCEINLINE_FUNCTION
+    const Scalar& get( Scalar a[N], const int d )
+    {
+        return a[d];
+    }
+};
+
+template<class Scalar, int M, int N>
+struct InterpolationAccessTraits<Scalar[M][N]>
+{
+    static constexpr int extent_0 = M;
+    static constexpr int extent_1 = N;
+
+    KOKKOS_FORCEINLINE_FUNCTION
+    Scalar& get( Scalar a[M][N], const int d0, const int d1 )
+    {
+        return a[d0][d1];
+    }
+};
+
+template<class Scalar, int M, int N>
+struct InterpolationAccessTraits<const Scalar[M][N]>
+{
+    static constexpr int extent_0 = M;
+    static constexpr int extent_1 = N;
+
+    KOKKOS_FORCEINLINE_FUNCTION
+    const Scalar& get( Scalar a[M][N], const int d0, const int d1 )
+    {
+        return a[d0][d1];
     }
 };
 

@@ -26,7 +26,7 @@
 namespace Cajita
 {
 //---------------------------------------------------------------------------//
-// PARTICLE DATA ACCESS TRAITS
+// INTERPOLATION DATA ACCESS TRAITS FOR POINT DATA
 //---------------------------------------------------------------------------//
 template<class T>
 struct InterpolationAccessTraits;
@@ -37,7 +37,7 @@ struct InterpolationAccessTraits<Scalar[N]>
     static constexpr int extent = N;
 
     KOKKOS_FORCEINLINE_FUNCTION
-    Scalar& get( Scalar a[N], const int d )
+    static Scalar& get( Scalar a[N], const int d )
     {
         return a[d];
     }
@@ -49,7 +49,7 @@ struct InterpolationAccessTraits<const Scalar[N]>
     static constexpr int extent = N;
 
     KOKKOS_FORCEINLINE_FUNCTION
-    const Scalar& get( Scalar a[N], const int d )
+    static const Scalar& get( const Scalar a[N], const int d )
     {
         return a[d];
     }
@@ -62,7 +62,7 @@ struct InterpolationAccessTraits<Scalar[M][N]>
     static constexpr int extent_1 = N;
 
     KOKKOS_FORCEINLINE_FUNCTION
-    Scalar& get( Scalar a[M][N], const int d0, const int d1 )
+    static Scalar& get( Scalar a[M][N], const int d0, const int d1 )
     {
         return a[d0][d1];
     }
@@ -75,7 +75,7 @@ struct InterpolationAccessTraits<const Scalar[M][N]>
     static constexpr int extent_1 = N;
 
     KOKKOS_FORCEINLINE_FUNCTION
-    const Scalar& get( Scalar a[M][N], const int d0, const int d1 )
+    static const Scalar& get( const Scalar a[M][N], const int d0, const int d1 )
     {
         return a[d0][d1];
     }

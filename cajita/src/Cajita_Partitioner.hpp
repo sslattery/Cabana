@@ -33,6 +33,20 @@ class Partitioner
     virtual std::array<int, 3> ranksPerDimension(
         MPI_Comm comm,
         const std::array<int, 3>& global_cells_per_dim ) const = 0;
+
+    /*!
+      \brief Get the number of locally-owned cells in each dimension of the
+      grid on this rank.
+      \param comm The Cartesian topology communicator to use for the
+      partitioning.
+      \param global_cells_per_dim The number of global cells in each
+      dimension.
+      \return The number of locally-owned cells in each dimension of the grid
+      on this rank.
+    */
+    virtual std::array<int,3> ownedCellsPerDimension(
+        MPI_Comm cart_comm,
+        const std::array<int, 3>& global_cells_per_dim ) const = 0;
 };
 
 //---------------------------------------------------------------------------//
